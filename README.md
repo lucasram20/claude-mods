@@ -9,15 +9,14 @@ Personal mods for [Claude Code](https://code.claude.com). Each mod lives in its 
 ## statusline
 
 ```
-✻ Sonnet 5.5 | Context: ██████████░░░░░░░░░░ 48% | main +1 ~2 ?1 ↑1 | 5:42 PM
-“Simplicity is prerequisite for reliability.” — Edsger Dijkstra
+✻ Sonnet 5.5 | Context: ██████████░░░░░░░░░░ 48% | main +1 ~2 ?1 ↑1 | “Simple is reliable.” — E. Dijkstra | 5:42 PM
 ```
 
 - **Model:** the Claude starburst in brand orange (`#d97757`), then the model name.
 - **Context bar:** a solid bar with a glint that sweeps across the filled part. Claude Code re-runs the script every second, and the animation frame is derived from the clock.
 - **Git:** branch plus `+` staged, `~` modified, `?` untracked, `↑` ahead, `↓` behind, or `clean`. Hidden outside a repo. Cached for 5 seconds.
 - **Time:** 12-hour clock.
-- **Quote:** a random quote on philosophy, science, software development or games, from [API Ninjas](https://api-ninjas.com/api/quotes). Optional, and it changes every 10 minutes.
+- **Quote:** a short random quote (70 characters including the author) on philosophy, science, software development or games, from [API Ninjas](https://api-ninjas.com/api/quotes), shown just before the clock. Optional, and it changes every 10 minutes. Longer quotes are skipped.
 
 ### Tech stack
 

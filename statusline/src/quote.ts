@@ -18,7 +18,11 @@ interface Cache {
 
 const TTL_MS = 10 * 60_000 // a new quote every 10 minutes
 const RETRY_MS = 60_000 // after a failed refresh, wait a minute before trying again
-const MAX_LEN = 140 // longer quotes don't fit on the status line
+const MAX_LEN = 70 // quote + author must fit on the first status line next to everything else
+const MAX_ATTEMPTS = 8 // short quotes are rare, so try several random picks before giving up
+
+/** Whether a quote is short enough to display (as `“text” — author`). */
+export const fits = (q: Quote): boolean => q.text.length + q.author.length + 5 <= MAX_LEN
 
 const apiUrl = () => process.env.QUOTES_API_URL ?? 'https://api.api-ninjas.com/v2/randomquotes'
 const cacheFile = () => join(process.env.STATUSLINE_CACHE_DIR ?? tmpdir(), 'claude-statusline-quote.json')
@@ -55,7 +59,7 @@ function query(topic: Topic, rand: () => number): URLSearchParams {
  */
 export async function fetchQuote(key: string, rand: () => number = Math.random): Promise<Quote | undefined> {
   const start = Math.floor(rand() * TOPICS.length)
-  for (let i = 0; i < TOPICS.length; i++) {
+  for (let i = 0; i < MAX_ATTEMPTS; i++) {
     const topic = TOPICS[(start + i) % TOPICS.length]
     if (!topic) continue
     try {
@@ -65,7 +69,8 @@ export async function fetchQuote(key: string, rand: () => number = Math.random):
       })
       if (!res.ok) return undefined // bad key, rate limit, outage: no point trying other topics
       const [q] = (await res.json()) as { quote?: string; author?: string }[]
-      if (q?.quote && q.quote.length <= MAX_LEN) return { text: q.quote, author: q.author ?? 'Unknown' }
+      const quote = { text: q?.quote ?? '', author: q?.author ?? 'Unknown' }
+      if (quote.text && fits(quote)) return quote
     } catch {
       return undefined
     }
@@ -88,7 +93,9 @@ export async function refreshQuote(): Promise<void> {
  */
 export function currentQuote(now: number): Quote | undefined {
   const cache = readCache()
-  if (now - cache.fetchedAt > TTL_MS && now - cache.attemptedAt > RETRY_MS && apiKey()) {
+  const quote = cache.quote && fits(cache.quote) ? cache.quote : undefined // drop quotes cached under an older, longer limit
+  const isStale = !quote || now - cache.fetchedAt > TTL_MS
+  if (isStale && now - cache.attemptedAt > RETRY_MS && apiKey()) {
     writeCache({ ...cache, attemptedAt: now })
     spawn(process.execPath, [join(import.meta.dirname, 'refresh-quote.ts')], {
       detached: true,
@@ -96,5 +103,5 @@ export function currentQuote(now: number): Quote | undefined {
       windowsHide: true,
     }).unref()
   }
-  return cache.quote
+  return quote
 }

@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { createServer, type IncomingHttpHeaders } from 'node:http'
-import { mkdtempSync, readFileSync } from 'node:fs'
+import { mkdtempSync, readFileSync, writeFileSync } from 'node:fs'
 import type { AddressInfo } from 'node:net'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
@@ -44,6 +44,13 @@ test('an HTTP error gives up without trying other topics', async t => {
   const requests = await mockApi(t, [{ status: 401, body: { error: 'bad key' } }])
   assert.equal(await fetchQuote('k'), undefined)
   assert.equal(requests.length, 1)
+})
+
+test('a cached quote that is too long for the line is not shown', () => {
+  const cache = { quote: { text: 'x'.repeat(100), author: 'E' }, fetchedAt: Date.now(), attemptedAt: Date.now() }
+  writeFileSync(join(process.env.STATUSLINE_CACHE_DIR!, 'claude-statusline-quote.json'), JSON.stringify(cache))
+  process.env.API_NINJAS_KEY = '' // no key: nothing to refresh with, so nothing to show
+  assert.equal(currentQuote(Date.now()), undefined)
 })
 
 test('refreshQuote fills the cache and currentQuote serves it without a key', async t => {
