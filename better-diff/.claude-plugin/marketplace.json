@@ -1,0 +1,5 @@
+{
+  "name": "better-diff",
+  "owner": { "name": "lucasram20" },
+  "plugins": [{ "name": "better-diff", "source": "./", "description": "Clean opencode-style diffs for Edit and Write" }]
+}

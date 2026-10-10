@@ -1,0 +1,5 @@
+{
+  "name": "better-diff",
+  "version": "0.1.0",
+  "description": "Draws Edit and Write results as a clean, opencode-style diff: line-number gutter, soft add/remove colors, a +N -M summary"
+}
