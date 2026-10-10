@@ -27,6 +27,36 @@ test('Edit result draws a diff with a path and summary', async ($, on) => {
   expect(await ui.find({ type: 'Text', text: /engine/ })).toBeUndefined()
 })
 
+test('wide terminals get two panes: old on the left, new on the right', async ($, on) => {
+  on('ui.render', engine)
+  const ui = await $.ui.mount({
+    plugin: 'better-diff', surface: 'terminal', component: 'ToolResult', props: edit, viewport: { columns: 200, rows: 50 },
+  })
+  // the context line shows on both sides, the replaced line once per side
+  expect(await ui.findAll({ type: 'Code' })).toHaveLength(4)
+  expect(await ui.find({ type: 'Code', text: /^old$/ })).toBeDefined()
+  expect(await ui.find({ type: 'Code', text: /^new$/ })).toBeDefined()
+})
+
+test('narrow terminals keep Claude Code\'s own diff', async ($, on) => {
+  on('ui.render', engine)
+  const ui = await $.ui.mount({
+    plugin: 'better-diff', surface: 'terminal', component: 'ToolResult', props: edit, viewport: { columns: 120, rows: 40 },
+  })
+  expect(await ui.find({ type: 'Code' })).toBeUndefined()
+  expect(await ui.find({ type: 'Text', text: /engine/ })).toBeDefined()
+})
+
+test('an added block hatches the empty old side instead of leaving a hole', async ($, on) => {
+  on('ui.render', engine)
+  const lines = [' keep', '+one', '+two']
+  const props = { ...edit, output: { ...edit.output, structuredPatch: [{ oldStart: 1, oldLines: 1, newStart: 1, newLines: 3, lines }] } }
+  const ui = await $.ui.mount({
+    plugin: 'better-diff', surface: 'terminal', component: 'ToolResult', props, viewport: { columns: 200, rows: 50 },
+  })
+  expect(await ui.findAll({ type: 'Text', text: /╱{10}/ })).toHaveLength(2)
+})
+
 test('CRLF lines still draw the diff instead of being refused', async ($, on) => {
   on('ui.render', engine)
   const lines = [' keep\r', '-old\r', '+new\r']

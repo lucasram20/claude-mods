@@ -1,8 +1,10 @@
 # better-diff
 
-A Claude Code mod that draws `Edit` and `Write` results like [opencode](https://opencode.ai) does: a quiet header (`path  +N -M`), then the engine's own diff block with a line-number gutter and add/remove coloring. A new file shows its first 30 lines.
+A Claude Code plugin that draws `Edit` and `Write` results like [opencode](https://opencode.ai) does: a quiet header (`path  +N -M`), then a side-by-side diff. The old file is on the left with removed lines in red, the new file on the right with added lines in green, each with its own line numbers and syntax highlighting. When one side has nothing (a pure addition or removal) it is filled with a faint hatch instead of a blank hole. A new file shows its first 30 lines in one pane.
 
-It hooks `ui.render` on `ToolResult` only. Errors, staged edits and empty patches fall through to Claude Code's default row. Nothing is written to disk and the model never sees the change.
+The split view needs a wide terminal (160 columns or more). On anything narrower, and for errors, staged edits and empty patches, Claude Code's own diff is drawn. Nothing is written to disk and the model never sees the change.
+
+It hooks `ui.render` on `ToolResult` only.
 
 ## Install
 
@@ -24,4 +26,4 @@ claude plugin validate ./better-diff
 claude plugin test ./better-diff
 ```
 
-Not done: opencode's side-by-side split view (the engine's `Code` element only does unified diffs).
+The width cut-over is `SPLIT_MIN_COLUMNS` in `hooks/register.tsx`.
