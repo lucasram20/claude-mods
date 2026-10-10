@@ -111,7 +111,7 @@ statusline/
 
 Releases are automated with [semantic-release](https://semantic-release.org) in [`.github/workflows/publish.yml`](../.github/workflows/publish.yml). Just push to `main`:
 
-1. The test matrix in [`ci.yml`](../.github/workflows/ci.yml) runs first: Windows, macOS and Linux on Node 22 and 24, with type check, unit tests, build, an install/run/uninstall smoke test and a package check. Pull requests run the same tests. If anything fails, nothing is released.
+1. The test matrix in [`ci-statusline.yml`](../.github/workflows/ci-statusline.yml) runs first: Windows, macOS and Linux on Node 22 and 24, with type check, unit tests, build, an install/run/uninstall smoke test and a package check. Pull requests run the same tests. If anything fails, nothing is released.
 2. If it passes, semantic-release reads the commit messages since the last tag and works out the next version. With no releasable commit it does nothing.
 3. Otherwise it publishes to npm, creates the git tag `vX.Y.Z` and a GitHub release with notes.
 

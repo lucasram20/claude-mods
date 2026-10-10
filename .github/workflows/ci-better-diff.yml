@@ -1,0 +1,41 @@
+name: CI / better-diff
+
+# Checks the better-diff plugin. It has no npm package and no release, so this is the only
+# workflow it needs; the statusline's release workflow ignores changes under better-diff/.
+on:
+  push:
+    branches: [main]
+    paths: [better-diff/**, .github/workflows/ci-better-diff.yml]
+  pull_request:
+    paths: [better-diff/**, .github/workflows/ci-better-diff.yml]
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: Test (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      # The plugin is checked by Claude Code itself: its manifest, its hooks module and its tests.
+      - name: Install Claude Code
+        run: npm install -g @anthropic-ai/claude-code
+
+      - name: Validate the plugin
+        run: claude plugin validate ./better-diff
+
+      - name: Test the plugin
+        run: claude plugin test ./better-diff

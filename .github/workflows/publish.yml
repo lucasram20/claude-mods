@@ -1,11 +1,13 @@
 name: Release
 
-# Every push to main runs the full test matrix first. Only if it passes does semantic-release
+# Every push to main that touches the statusline runs the full test matrix first (other mods, like
+# better-diff, have their own workflow and never start this one). Only if it passes does semantic-release
 # look at the commit messages and, when there is something to release, publish to npm and
 # create the GitHub release. The file name matters: npm's trusted publisher is tied to it.
 on:
   push:
     branches: [main]
+    paths: [statusline/**, .github/workflows/publish.yml, .github/workflows/ci-statusline.yml]
 
 permissions:
   contents: read
@@ -16,7 +18,7 @@ concurrency:
 
 jobs:
   test:
-    uses: ./.github/workflows/ci.yml
+    uses: ./.github/workflows/ci-statusline.yml
 
   release:
     needs: test

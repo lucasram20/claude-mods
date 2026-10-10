@@ -1,8 +1,9 @@
-name: CI
+name: CI / statusline
 
-# Runs on pull requests, and is called by publish.yml before every release.
+# Tests the statusline. Runs on pull requests that touch it, and is called by publish.yml before every release.
 on:
   pull_request:
+    paths: [statusline/**, .github/workflows/ci-statusline.yml]
   workflow_call:
 
 permissions:
