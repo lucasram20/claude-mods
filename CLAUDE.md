@@ -4,7 +4,7 @@ Personal mods for Claude Code. Each mod lives in its own folder and is self-cont
 
 | Folder | What it is | Ships as |
 | --- | --- | --- |
-| `statusline/` | Status line (TypeScript, Ink installer) | npm package `claude-mods-statusline`, released automatically |
+| `statusline/` | Status line (TypeScript, dependency-free installer) | npm package `claude-mods-statusline`, released automatically |
 | `better-diff/` | Claude Code plugin (a `ui.render` hooks module) | Not published; installed from a clone |
 
 A change belongs to one mod. Don't let `statusline/` and `better-diff/` import from each other.
@@ -42,7 +42,9 @@ Every push to `main` that touches `statusline/` runs semantic-release, which rea
 
 - Node 22+, `node:test`, ES modules compiled with `tsc`; imports use the `.ts` extension.
 - `src/runtime/` is copied to the user's machine and runs on every status update: **Node built-ins only, no dependencies**, no work that waits on the network. Cache on disk, refresh in the background.
-- `src/installer/` is the only place that uses Ink. Anything that edits `settings.json` must back it up first, leave other keys alone, and only remove what it installed (identified by `MARKER`).
+- **The package has no dependencies, on purpose** (Socket's supply chain score drops on any dependency with an alert, and `npx` installs faster without them). The installer prompts with `node:readline`. Don't add a runtime dependency; if a few lines of Node can't do it, ask first.
+- `statusline/README.md` is what npm shows: keep it about using the statusline only. Development and release notes go in `statusline/DEVELOPMENT.md`.
+- Anything in `src/installer/` that edits `settings.json` must back it up first, leave other keys alone, and only remove what it installed (identified by `MARKER`).
 - Check with `npm run check`, then `npm run build`, from `statusline/`.
 
 ### better-diff/
