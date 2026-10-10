@@ -9,7 +9,7 @@ A custom status line for [Claude Code](https://code.claude.com), with a one-comm
 - **Model:** the Claude starburst in brand orange (`#d97757`), then the model name.
 - **Context bar:** a solid bar plus the percentage, colored by how full the context is: green below 45%, yellow from 45%, orange from 70%, red from 85%.
 - **Git:** purple branch plus `+` staged (green), `~` modified (yellow), `?` untracked (red), `↑` ahead and `↓` behind (cyan), or `clean`. Hidden outside a repo. Cached for 5 seconds.
-- **Quote:** a short random quote (70 characters including the author) on philosophy, science, software development or games, from [API Ninjas](https://api-ninjas.com/api/quotes). Optional; without a key the quote is simply left out.
+- **Quote:** a short random quote (70 characters including the author) on philosophy, science, software development or games, from [API Ninjas](https://api-ninjas.com/api/quotes). Optional: choose it in the installer, or say no and the line has no quote.
 - **Time:** 12-hour clock, in blue.
 
 ## Install
@@ -20,17 +20,23 @@ Requires **Node.js 22 or newer** and Git.
 npx claude-mods-statusline
 ```
 
-The installer shows a preview, asks for an optional API Ninjas key (free at [api-ninjas.com/register](https://api-ninjas.com/register)), then:
+The installer shows a live preview and asks whether you want random quotes. Quotes are optional:
+
+- **Yes:** it asks for your API Ninjas key (free at [api-ninjas.com/register](https://api-ninjas.com/register)). A key is required for this choice.
+- **No:** no key is asked for, none is kept, and the status line never calls the quotes API.
+
+Then it:
 
 1. copies the status line to `~/.claude/claude-mods-statusline/` (or `$CLAUDE_CONFIG_DIR/claude-mods-statusline/`),
-2. saves your key there in a private `.env` (mode `0600`),
+2. saves your choice in `config.json` there, and your key in a private `.env` (mode `0600`) if you picked quotes,
 3. backs up your `settings.json` to `settings.json.bak-claude-mods-<time>`, then sets `statusLine` in it. Everything else in the file is left alone.
 
-Restart Claude Code afterwards. Run the installer again any time to add or change the key or to update.
+Restart Claude Code afterwards. Run the installer again any time to turn quotes on or off, change the key, or update.
 
 | Option | |
 | --- | --- |
-| `-y`, `--yes` | No prompts; reads the key from the `API_NINJAS_KEY` environment variable if set |
+| `-y`, `--yes` | No prompts. Quotes are on only if the `API_NINJAS_KEY` environment variable is set |
+| `--quotes` / `--no-quotes` | With `--yes`: force quotes on (needs a key) or off |
 | `--uninstall` | Remove the status line and the files the installer added (only if it is the status line this tool installed) |
 | `-h`, `--help` / `-v`, `--version` | |
 
@@ -91,6 +97,7 @@ statusline/
 │   │   ├── refresh-quote.ts  detached background refresh
 │   │   ├── topics.ts         quote topics and authors
 │   │   ├── theme.ts          color palette and helpers
+│   │   ├── config.ts         reads the installer's quotes on/off choice
 │   │   └── env.ts            tiny .env loader
 │   └── installer/      the Ink installer (npx claude-mods-statusline)
 │       ├── cli.tsx           entry point and argument parsing
@@ -102,13 +109,23 @@ statusline/
 
 ## Publishing (maintainer)
 
-Publishing is automated by [`.github/workflows/publish.yml`](../.github/workflows/publish.yml): creating a GitHub release publishes to npm.
+Releases are automated with [semantic-release](https://semantic-release.org) in [`.github/workflows/publish.yml`](../.github/workflows/publish.yml). Just push to `main`:
 
-1. One time: add an npm access token as the repository secret `NPM_TOKEN` (`gh secret set NPM_TOKEN`). Use a granular token with read and write access to packages that bypasses 2FA, or an automation token.
-2. Set `version` in `statusline/package.json` (for example `npm version patch --no-git-tag-version`), commit and push.
-3. Create a release whose tag is `v` plus that version, for example `gh release create v0.1.0 --generate-notes`.
+1. The test matrix in [`ci.yml`](../.github/workflows/ci.yml) runs first: Windows, macOS and Linux on Node 22 and 24, with type check, unit tests, build, an install/run/uninstall smoke test and a package check. Pull requests run the same tests. If anything fails, nothing is released.
+2. If it passes, semantic-release reads the commit messages since the last tag and works out the next version. With no releasable commit it does nothing.
+3. Otherwise it publishes to npm, creates the git tag `vX.Y.Z` and a GitHub release with notes.
 
-The workflow checks that the tag matches the version, runs the type check and tests, then runs `npm publish --provenance`. Manual publishing (`npm login`, then `npm publish` in `statusline/`) still works.
+Commit messages decide the version ([Conventional Commits](https://www.conventionalcommits.org)). While the package is below 1.0.0 the rules in [`.releaserc.json`](.releaserc.json) are deliberately gentle, so a version is never skipped:
+
+| Commit | Release |
+| --- | --- |
+| `fix:`, `feat:`, `perf:`, `revert:` | patch (0.1.1, 0.1.2, ...) |
+| a `BREAKING CHANGE:` footer or `type!:` | minor (0.2.0) |
+| `docs:`, `ci:`, `chore:`, `test:`, `refactor:`, `style:` | no release |
+
+To move to 1.0.0 later, change the `feat` rule to `minor` and the `breaking` rule to `major` in `.releaserc.json`.
+
+Publishing uses npm [Trusted Publishing](https://docs.npmjs.com/trusted-publishers): the package's trusted publisher on npmjs.com points at this repository and `publish.yml`, so no token is stored. The repo's `package.json` keeps its version as is; the real version lives in the git tag, the GitHub release and the published package. You can preview the next version with `npx semantic-release --dry-run --no-ci` on `main`.
 
 ## License
 
