@@ -2,6 +2,7 @@ import { execFileSync } from 'node:child_process'
 import { readFileSync, statSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
+import { fg, PALETTE, type Rgb } from './theme.ts'
 
 const CACHE_TTL_MS = 5000
 
@@ -32,6 +33,23 @@ export function summarize(out: string): string {
     behind && `↓${behind}`,
   ].filter(Boolean)
   return `${branch} ${flags.length ? flags.join(' ') : 'clean'}`
+}
+
+const FLAG_COLORS: [RegExp, Rgb][] = [
+  [/^\+\d+$/, PALETTE.staged],
+  [/^~\d+$/, PALETTE.modified],
+  [/^\?\d+$/, PALETTE.untracked],
+  [/^[↑↓]\d+$/, PALETTE.sync],
+  [/^clean$/, PALETTE.clean],
+]
+
+/** Colors a `summarize` result: purple branch, then each flag in its own color. */
+export function paintGit(summary: string): string {
+  const words = summary.split(' ')
+  let split = words.length // index where the trailing flags begin
+  while (split > 1 && FLAG_COLORS.some(([re]) => re.test(words[split - 1] ?? ''))) split--
+  const flags = words.slice(split).map(w => fg(FLAG_COLORS.find(([re]) => re.test(w))?.[1] ?? PALETTE.divider, w))
+  return [fg(PALETTE.branch, words.slice(0, split).join(' ')), ...flags].join(' ')
 }
 
 function run(dir: string): string {

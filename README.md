@@ -9,13 +9,14 @@ Personal mods for [Claude Code](https://code.claude.com). Each mod lives in its 
 ## statusline
 
 ```
-✻ Sonnet 5.5 | Context: ██████████░░░░░░░░░░ 48% | main +1 ~2 ?1 ↑1 | “Simple is reliable.” — E. Dijkstra | 5:42 PM
+✻ Sonnet 5.5 | ██████████░░░░░░░░░░ 48% | main +1 ~2 ?1 ↑1 | “Simple is reliable.” — E. Dijkstra | 5:42 PM
 ```
 
 - **Model:** the Claude starburst in brand orange (`#d97757`), then the model name.
-- **Context bar:** a solid bar with a glint that sweeps across the filled part. Claude Code re-runs the script every second, and the animation frame is derived from the clock.
-- **Git:** branch plus `+` staged, `~` modified, `?` untracked, `↑` ahead, `↓` behind, or `clean`. Hidden outside a repo. Cached for 5 seconds.
-- **Time:** 12-hour clock.
+- **Context bar:** a solid bar with a glint that sweeps across the filled part, plus the percentage. Green below 50%, amber from 50%, red from 80%. Claude Code re-runs the script every second, and the animation frame is derived from the clock.
+- **Git:** purple branch plus `+` staged (green), `~` modified (yellow), `?` untracked (red), `↑` ahead and `↓` behind (cyan), or `clean`. Hidden outside a repo. Cached for 5 seconds.
+- **Time:** 12-hour clock, in blue.
+- **Colors:** all in [`src/theme.ts`](statusline/src/theme.ts) as 24-bit RGB, so the palette is easy to retune.
 - **Quote:** a short random quote (70 characters including the author) on philosophy, science, software development or games, from [API Ninjas](https://api-ninjas.com/api/quotes), shown just before the clock. Optional, and it changes every 10 minutes. Longer quotes are skipped.
 
 ### Tech stack
@@ -98,6 +99,7 @@ claude-mods/
     │   ├── quote.ts           quote fetching and cache
     │   ├── refresh-quote.ts   detached background refresh entry
     │   ├── topics.ts          quote topics and authors
+    │   ├── theme.ts           color palette and helpers
     │   └── env.ts             tiny .env loader
     └── test/                  node:test suites
 ```

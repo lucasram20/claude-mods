@@ -1,25 +1,28 @@
-const BASE = 246 // filled
-const EMPTY = 238 // free space
-const GLINT = [250, 255, 250] // soft edge, bright core, soft edge (256-color grays)
+import { bg, heat, PALETTE, RESET_ALL, type Rgb } from './theme.ts'
+
 const SPEED = 3 // cells per second
 const PAUSE = 10 // idle cells after the glint leaves, so the shine is periodic
+const GLINT_WIDTH = 3 // soft edge, bright core, soft edge
 
 /**
- * Solid context bar drawn with background colors, with a glint that sweeps across
- * the filled part. The frame is a pure function of `now`, so the status line needs
- * no state between runs: Claude Code just re-runs it every `refreshInterval`.
+ * Solid context bar drawn with background colors, tinted by how full the context is,
+ * with a glint that sweeps across the filled part. The frame is a pure function of
+ * `now`, so the status line needs no state between runs: Claude Code just re-runs it
+ * every `refreshInterval`.
  */
 export function renderBar(percent: number, now: number, width = 20): string {
   const clamped = Math.min(100, Math.max(0, percent))
   const filled = Math.round((clamped / 100) * width)
-  const cycle = filled + GLINT.length + PAUSE
-  const head = (Math.floor((now / 1000) * SPEED) % cycle) - GLINT.length // glint's leading edge
+  const { base, edge, core } = heat(clamped)
+  const glint: Rgb[] = [edge, core, edge]
+  const cycle = filled + GLINT_WIDTH + PAUSE
+  const head = (Math.floor((now / 1000) * SPEED) % cycle) - GLINT_WIDTH // glint's leading edge
 
   let out = ''
   for (let i = 0; i < width; i++) {
-    const g = head - i // 0..GLINT.length-1 when this cell is under the glint
-    const color = i >= filled ? EMPTY : g >= 0 && g < GLINT.length ? GLINT[g] : BASE
-    out += `\x1b[48;5;${color}m `
+    const g = head - i // 0..GLINT_WIDTH-1 when this cell is under the glint
+    const color = i >= filled ? PALETTE.barEmpty : g >= 0 && g < GLINT_WIDTH ? (glint[g] ?? base) : base
+    out += `${bg(color)} `
   }
-  return `${out}\x1b[0m`
+  return out + RESET_ALL
 }
