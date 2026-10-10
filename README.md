@@ -4,23 +4,23 @@ Personal mods for [Claude Code](https://code.claude.com). Each mod lives in its 
 
 | Mod | What it does | Install |
 | --- | --- | --- |
-| [`statusline/`](statusline) | A themed status line: model, color-coded context bar, git status, a random quote and a clock | `npx claude-mods-statusline` |
+| [`statusline/`](statusline) | A themed status line: model, color-coded context bar, git status, a clock and the song you are playing | `npx claude-mods-statusline` |
 | [`better-diff/`](better-diff) | Shows file changes as a clean side-by-side diff, like opencode | [From a clone](#better-diff) |
 
 ## statusline
 
 ```
-✻ Sonnet 5.5 | ██████████░░░░░░░░░░ 48% | main +1 ~2 ?1 ↑1 | “Simple is reliable.” — E. Dijkstra | 5:42 PM
+✻ Sonnet 5.5 | ██████████░░░░░░░░░░ 48% | main +1 ~2 ?1 ↑1 | ♪ Pandora — Wisp ━━━━●─────── 1:12/4:21 | 5:42 PM
 ```
 
-Shows the model, a context bar that turns yellow, orange and red as it fills, git branch and changes, an optional quote and a 12-hour clock. Works on Windows, macOS and Linux.
+Shows the model, a context bar that turns yellow, orange and red as it fills, git branch and changes, and the song that is playing (YouTube Music, Spotify and more), ending with a 12-hour clock. Works on Windows, macOS and Linux; the song needs Windows or Linux.
 
 ```sh
 npx claude-mods-statusline              # install (Node.js 22+ and Git)
 npx claude-mods-statusline --uninstall  # remove it again
 ```
 
-Options and development notes: [`statusline/README.md`](statusline/README.md).
+Features, options and development notes: [`statusline/GUIDE.md`](statusline/GUIDE.md).
 
 ## better-diff
 

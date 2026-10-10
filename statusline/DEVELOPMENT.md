@@ -1,13 +1,13 @@
 # Developing the statusline
 
-User docs are in [`README.md`](README.md) (that file is what npm shows). This one is for working on the code. It is not published to npm.
+User docs are in [`GUIDE.md`](GUIDE.md). This one is for working on the code. Neither is published to npm; `README.md` (the npm page) only describes the package and links here.
 
 ## Tech stack
 
 - **TypeScript**, compiled to ES modules with `tsc`
-- **No runtime dependencies.** The installer prompts with `node:readline`, and the status line uses only Node built-ins (`fs`, `child_process`, `fetch`)
+- **No runtime dependencies.** The installer prompts with `node:readline`, and the status line uses only Node built-ins (`fs`, `child_process`)
 - **`node:test`** for tests
-- [**API Ninjas Quotes API**](https://api-ninjas.com/api/quotes) (free tier is non-commercial)
+- **Windows PowerShell 5.1** (built into Windows) for the media controls, and `playerctl` on Linux, both spawned as child processes
 
 Keep it dependency-free: a package with no dependencies has no supply chain to audit, which is what Socket's supply chain score measures. Add a dependency only if a few lines of Node can't do the job.
 
@@ -15,10 +15,14 @@ Keep it dependency-free: a package with no dependencies has no supply chain to a
 
 - Nothing is kept in memory between runs: each run is a short-lived process.
 - Git results are cached on disk for 5 seconds, so most runs don't start `git`.
-- The quote is read from a cache file in the OS temp folder. When it is older than 10 minutes, a detached background process refreshes it, so the status line never waits on the network. A failed refresh keeps the old quote and retries after a minute.
-- `refreshInterval: 30` re-runs it every 30 seconds so the clock stays current while idle.
+- The playing track is read from a cache file in the OS temp folder. A detached watcher (`watch-music.ts`) rewrites it once a second, so the status line never waits on the player. The status line starts the watcher when the cache has gone quiet and touches a heartbeat file on every run; the watcher quits 30 seconds after the last heartbeat. Between writes the position is advanced from the time it was measured.
+- `refreshInterval: 1` (the minimum) re-runs the status line every second so the clock and the song time keep moving while idle. Each run is one small Node start and a cache read.
 
-The API's category list only includes `philosophy` of the four topics. Science, software and games quotes are matched by author instead, using the lists in `src/runtime/topics.ts`.
+### Now playing
+
+- **Windows:** `src/runtime/player.ts` keeps one `powershell.exe -Command -` open and pipes a script into its stdin (no script file to ship, no execution policy to deal with). The script loops once a second and quits when the watcher is gone. PowerShell drops a block that spans several stdin lines, so the script keeps each block on one line. It uses the `GlobalSystemMediaTransportControlsSessionManager` WinRT API, picks the session that is playing (else the current one) and prints one JSON line.
+- **Linux:** `playerctl -a metadata --format ...` once a second, one line per MPRIS player.
+- Track text comes from web pages, so it goes through `clean()` before it can reach the terminal.
 
 ## Development
 
@@ -37,8 +41,6 @@ Run the status line straight from source (Node 24+ strips the types):
 echo '{"model":{"display_name":"Opus 4.5"},"context_window":{"used_percentage":48}}' | node src/runtime/main.ts
 ```
 
-For quotes while developing, copy `.env.example` to `.env` and set `API_NINJAS_KEY=`. `.env` is git-ignored, and a real `API_NINJAS_KEY` environment variable wins over the file.
-
 ### Layout
 
 ```
@@ -50,16 +52,15 @@ statusline/
 │   │   ├── input.ts          reads the status JSON from stdin
 │   │   ├── bar.ts            context bar
 │   │   ├── git.ts            git branch and status, cached
-│   │   ├── quote.ts          quote fetching and cache
-│   │   ├── refresh-quote.ts  detached background refresh
-│   │   ├── topics.ts         quote topics and authors
-│   │   ├── theme.ts          color palette and helpers
-│   │   ├── config.ts         reads the installer's quotes on/off choice
-│   │   └── env.ts            tiny .env loader
+│   │   ├── player.ts         reads the player (PowerShell on Windows, playerctl on Linux)
+│   │   ├── music.ts          cache, heartbeat and starting the watcher
+│   │   ├── watch-music.ts    detached watcher that keeps the cache current
+│   │   ├── music-line.ts     the now-playing segment and seek bar
+│   │   └── theme.ts          color palette and helpers
 │   └── installer/      the installer (npx claude-mods-statusline)
 │       ├── cli.ts            entry point and argument parsing
 │       ├── ui.ts             prompts and progress output
-│       ├── install.ts        file copy, key, settings backup
+│       ├── install.ts        file copy, settings backup
 │       └── settings.ts       pure settings.json edits
 └── test/               node:test suites
 ```

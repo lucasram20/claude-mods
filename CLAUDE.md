@@ -35,15 +35,15 @@ Every push to `main` that touches `statusline/` runs semantic-release, which rea
 - TypeScript, strict. No semicolons, single quotes, 2-space indent, `const` over `let`, small functions, named exports.
 - Comments say **why**, not what. Mark a deliberate shortcut with a `ponytail:` comment naming its limit and the upgrade path.
 - Non-trivial logic leaves one runnable check behind. Don't add test frameworks.
-- Never commit secrets: `.env` is ignored, only `.env.example` is tracked.
-- User-facing text is plain and short. Update the mod's README and the root README table when behavior or install steps change.
+- Never commit secrets: `.env` files are ignored.
+- User-facing text is plain and short. Update the mod's guide (or README) and the root README table when behavior or install steps change.
 
 ### statusline/
 
 - Node 22+, `node:test`, ES modules compiled with `tsc`; imports use the `.ts` extension.
 - `src/runtime/` is copied to the user's machine and runs on every status update: **Node built-ins only, no dependencies**, no work that waits on the network. Cache on disk, refresh in the background.
 - **The package has no dependencies, on purpose** (Socket's supply chain score drops on any dependency with an alert, and `npx` installs faster without them). The installer prompts with `node:readline`. Don't add a runtime dependency; if a few lines of Node can't do it, ask first.
-- `statusline/README.md` is what npm shows: keep it about using the statusline only. Development and release notes go in `statusline/DEVELOPMENT.md`.
+- `statusline/README.md` is what npm shows: keep it to a short description, the repo link and the license. Usage docs go in `statusline/GUIDE.md`, development and release notes in `statusline/DEVELOPMENT.md`.
 - Anything in `src/installer/` that edits `settings.json` must back it up first, leave other keys alone, and only remove what it installed (identified by `MARKER`).
 - Check with `npm run check`, then `npm run build`, from `statusline/`.
 
