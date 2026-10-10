@@ -46,8 +46,10 @@ jobs:
           mkdir -p "$CLAUDE_CONFIG_DIR"
           node dist/installer/cli.js --yes --no-quotes
           test -f "$CLAUDE_CONFIG_DIR/settings.json"
-          echo '{"model":{"display_name":"Opus"},"context_window":{"used_percentage":40}}' \
-            | node "$CLAUDE_CONFIG_DIR/claude-mods-statusline/runtime/main.js" | tee /dev/stderr | grep -q Opus
+          line="$(echo '{"model":{"display_name":"Opus"},"context_window":{"used_percentage":40}}' \
+            | node "$CLAUDE_CONFIG_DIR/claude-mods-statusline/runtime/main.js")"
+          echo "$line"
+          echo "$line" | grep -q Opus
           node dist/installer/cli.js --uninstall --yes
           test ! -d "$CLAUDE_CONFIG_DIR/claude-mods-statusline"
 
