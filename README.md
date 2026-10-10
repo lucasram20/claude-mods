@@ -2,10 +2,10 @@
 
 Personal mods for [Claude Code](https://code.claude.com). Each mod lives in its own folder and is self-contained.
 
-| Mod | What it does |
-| --- | --- |
-| [`statusline/`](statusline) | A custom status line: Claude logo and model, a color-coded context bar, git branch and status, a random quote and a 12-hour clock. Installs with one command on Windows, macOS and Linux |
-| [`better-diff/`](better-diff) | Draws `Edit` and `Write` results as a clean opencode-style diff (path, `+N -M`, line-number gutter) |
+| Mod | What it does | Install |
+| --- | --- | --- |
+| [`statusline/`](statusline) | A themed status line: model, color-coded context bar, git status, a random quote and a clock | `npx claude-mods-statusline` |
+| [`better-diff/`](better-diff) | Shows file changes as a clean side-by-side diff, like opencode | [From a clone](#better-diff) |
 
 ## statusline
 
@@ -13,19 +13,21 @@ Personal mods for [Claude Code](https://code.claude.com). Each mod lives in its 
 ✻ Sonnet 5.5 | ██████████░░░░░░░░░░ 48% | main +1 ~2 ?1 ↑1 | “Simple is reliable.” — E. Dijkstra | 5:42 PM
 ```
 
-Install (Node.js 22+ and Git):
+Shows the model, a context bar that turns yellow, orange and red as it fills, git branch and changes, an optional quote and a 12-hour clock. Works on Windows, macOS and Linux.
 
 ```sh
-npx claude-mods-statusline
+npx claude-mods-statusline              # install (Node.js 22+ and Git)
+npx claude-mods-statusline --uninstall  # remove it again
 ```
 
-Remove it again with `npx claude-mods-statusline --uninstall`.
-
-Full docs, options and development notes are in [`statusline/README.md`](statusline/README.md).
+Options and development notes: [`statusline/README.md`](statusline/README.md).
 
 ## better-diff
 
-A Claude Code plugin that redraws `Edit` and `Write` results as a clean, opencode-style diff: a `path +N -M` header, a line-number gutter and soft add/remove colors.
+A Claude Code plugin that redraws file changes the way [opencode](https://opencode.ai) does: the old file on the left with removed lines in red, the new file on the right with added lines in green, each with line numbers and syntax highlighting.
+
+- Needs a wide terminal (160 columns or more). On narrower ones Claude Code's own diff is shown.
+- A new file shows its first 30 lines in one pane.
 
 Install from a clone of this repo:
 
@@ -34,4 +36,12 @@ claude plugin marketplace add ./better-diff
 claude plugin install better-diff@better-diff --scope user
 ```
 
-Details and development notes are in [`better-diff/README.md`](better-diff/README.md).
+Details and development notes: [`better-diff/README.md`](better-diff/README.md).
+
+## Contributing
+
+Commit rules, CI layout and code style are in [`CLAUDE.md`](CLAUDE.md).
+
+## License
+
+[MIT](LICENSE) © 2026 lucasram20
