@@ -102,12 +102,13 @@ statusline/
 
 ## Publishing (maintainer)
 
-```sh
-npm login
-cd statusline
-npm version patch      # for later releases
-npm publish            # runs type check, tests and build first; asks for your 2FA code
-```
+Publishing is automated by [`.github/workflows/publish.yml`](../.github/workflows/publish.yml): creating a GitHub release publishes to npm.
+
+1. One time: add an npm access token as the repository secret `NPM_TOKEN` (`gh secret set NPM_TOKEN`). Use a granular token with read and write access to packages that bypasses 2FA, or an automation token.
+2. Set `version` in `statusline/package.json` (for example `npm version patch --no-git-tag-version`), commit and push.
+3. Create a release whose tag is `v` plus that version, for example `gh release create v0.1.0 --generate-notes`.
+
+The workflow checks that the tag matches the version, runs the type check and tests, then runs `npm publish --provenance`. Manual publishing (`npm login`, then `npm publish` in `statusline/`) still works.
 
 ## License
 
