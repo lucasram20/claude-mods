@@ -49,24 +49,20 @@ if (args.version) {
   process.exit(0)
 }
 
-// Checked before loading Ink, which refuses to start on older Node versions.
+// Checked before the installer loads, so an old Node gets a clear message instead of a syntax error.
 if (Number(process.versions.node.split('.')[0]) < 22) {
   console.error(`Node.js 22 or newer is required (you have ${process.versions.node}). Get it at https://nodejs.org`)
   process.exit(1)
 }
 
-const { render } = await import('ink')
-const { App } = await import('./app.tsx')
+const { run } = await import('./ui.ts')
 const { claudeDir } = await import('./install.ts')
 
-const { waitUntilExit } = render(
-  <App
-    mode={args.uninstall ? 'uninstall' : 'install'}
-    ask={!args.yes && Boolean(process.stdin.isTTY && process.stdout.isTTY)}
-    claudeDir={claudeDir()}
-    sourceDir={join(import.meta.dirname, '..', 'runtime')}
-    envKey={process.env.API_NINJAS_KEY}
-    quotes={args['no-quotes'] ? false : args.quotes ? true : undefined}
-  />,
-)
-await waitUntilExit()
+process.exitCode = await run({
+  mode: args.uninstall ? 'uninstall' : 'install',
+  ask: !args.yes && Boolean(process.stdin.isTTY && process.stdout.isTTY),
+  claudeDir: claudeDir(),
+  sourceDir: join(import.meta.dirname, '..', 'runtime'),
+  envKey: process.env.API_NINJAS_KEY,
+  quotes: args['no-quotes'] ? false : args.quotes ? true : undefined,
+})

@@ -1,13 +1,12 @@
 {
   "name": "claude-mods-statusline",
   "version": "0.1.0",
-  "description": "A themed status line for Claude Code, with an interactive installer for Windows, macOS and Linux",
+  "description": "A themed status line for Claude Code, with a dependency-free installer for Windows, macOS and Linux",
   "keywords": [
     "claude",
     "claude-code",
     "statusline",
-    "cli",
-    "ink"
+    "cli"
   ],
   "license": "MIT",
   "type": "module",
@@ -42,17 +41,12 @@
     "check": "npm run typecheck && npm test",
     "prepublishOnly": "npm run check && npm run build"
   },
-  "dependencies": {
-    "ink": "^8.0.0",
-    "react": "^19.3.0"
-  },
   "devDependencies": {
     "@semantic-release/commit-analyzer": "^13.0.1",
     "@semantic-release/github": "^12.0.10",
     "@semantic-release/npm": "^13.2.0",
     "@semantic-release/release-notes-generator": "^14.1.1",
     "@types/node": "^22.20.5",
-    "@types/react": "^19.3.0",
     "conventional-changelog-conventionalcommits": "^8.0.0",
     "semantic-release": "^25.0.9",
     "typescript": "^7.0.2"
