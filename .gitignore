@@ -1,0 +1,34 @@
+# Dependencies
+node_modules/
+
+# Secrets: never commit keys. The .example template is the only tracked env file.
+.env
+.env.*
+!.env.example
+
+# Build output, caches, coverage
+dist/
+build/
+coverage/
+*.tsbuildinfo
+.cache/
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+
+# Claude Code local-only settings
+.claude/settings.local.json
+
+# Editors
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+.idea/
+*.swp
+
+# OS files
+.DS_Store
+Thumbs.db
+Desktop.ini
