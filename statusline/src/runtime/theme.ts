@@ -31,8 +31,9 @@ export const PALETTE = {
   untracked: [255, 110, 110], // red
   sync: [139, 233, 253], // cyan: ahead/behind
   clean: [120, 200, 150], // calm green
-  quote: [125, 207, 220], // soft teal
-  author: [150, 160, 190], // muted blue-gray
+  music: [125, 207, 220], // soft teal: title, buttons, played part of the wave
+  musicDim: [70, 78, 98], // unplayed part of the wave, paused marker
+  artist: [150, 160, 190], // muted blue-gray
   time: [122, 162, 247], // blue
   divider: [90, 94, 110], // dim slate
   barEmpty: [58, 58, 68], // free part of the context bar

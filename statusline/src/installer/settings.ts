@@ -2,7 +2,7 @@ import { join } from 'node:path'
 
 /** Appears in the install path, which is how we recognise our own entry in settings.json. */
 export const MARKER = 'claude-mods-statusline'
-export const REFRESH_SECONDS = 30 // keeps the clock current while a session is idle
+export const REFRESH_SECONDS = 1 // the shortest Claude Code allows: keeps the clock and the song time moving while a session is idle
 
 export type Settings = Record<string, unknown>
 

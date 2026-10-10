@@ -1,9 +1,8 @@
 import assert from 'node:assert/strict'
-import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { test } from 'node:test'
-import { quotesSetting } from '../src/runtime/config.ts'
 import { inspect, installRoot, installSteps, runSteps, settingsPath, uninstallSteps } from '../src/installer/install.ts'
 import {
   isOurs,
@@ -56,7 +55,7 @@ test('withStatusLine / withoutStatusLine only touch our own entry', () => {
 
 test('install into a fresh config folder', () => {
   const { claudeDir, sourceDir } = sandbox()
-  runSteps(installSteps({ claudeDir, sourceDir, quotes: false }))
+  runSteps(installSteps({ claudeDir, sourceDir }))
 
   const root = installRoot(claudeDir)
   assert.deepEqual(readdirSync(join(root, 'runtime')).sort(), ['bar.js', 'main.js'])
@@ -72,7 +71,7 @@ test('install keeps other settings, replaces a foreign status line and backs up 
   const original = { theme: 'dark', statusLine: { type: 'command', command: 'node gsd.js' }, hooks: { a: 1 } }
   writeFileSync(settingsPath(claudeDir), JSON.stringify(original))
 
-  runSteps(installSteps({ claudeDir, sourceDir, quotes: false }))
+  runSteps(installSteps({ claudeDir, sourceDir }))
 
   const after = readJson(settingsPath(claudeDir))
   assert.equal(after.theme, 'dark')
@@ -86,71 +85,15 @@ test('install keeps other settings, replaces a foreign status line and backs up 
 test('a broken settings.json aborts before anything is written', () => {
   const { claudeDir, sourceDir } = sandbox()
   writeFileSync(settingsPath(claudeDir), '{ broken')
-  assert.throws(() => runSteps(installSteps({ claudeDir, sourceDir, quotes: false })), /not valid JSON/)
+  assert.throws(() => runSteps(installSteps({ claudeDir, sourceDir })), /not valid JSON/)
   assert.equal(existsSync(installRoot(claudeDir)), false)
   assert.equal(readFileSync(settingsPath(claudeDir), 'utf8'), '{ broken')
   assert.match(inspect(claudeDir).settingsError ?? '', /not valid JSON/)
 })
 
-test('API key: saved privately, kept on re-install, bad values rejected', () => {
-  const { claudeDir, sourceDir } = sandbox()
-  const env = join(installRoot(claudeDir), '.env')
-
-  assert.throws(() => runSteps(installSteps({ claudeDir, sourceDir, quotes: true, apiKey: 'abc\nEVIL=1' })), /unexpected characters/)
-  assert.equal(existsSync(installRoot(claudeDir)), false)
-
-  runSteps(installSteps({ claudeDir, sourceDir, quotes: true, apiKey: 'abcDEF123456' }))
-  assert.equal(readFileSync(env, 'utf8'), 'API_NINJAS_KEY=abcDEF123456\n')
-  if (process.platform !== 'win32') assert.equal(statSync(env).mode & 0o777, 0o600)
-  assert.equal(inspect(claudeDir).hasKey, true)
-
-  runSteps(installSteps({ claudeDir, sourceDir, quotes: true })) // no key given: keep the saved one
-  assert.equal(readFileSync(env, 'utf8'), 'API_NINJAS_KEY=abcDEF123456\n')
-})
-
-test('quotes on: config says so and the key is saved', () => {
-  const { claudeDir, sourceDir } = sandbox()
-  runSteps(installSteps({ claudeDir, sourceDir, quotes: true, apiKey: 'abcDEF123456' }))
-  const root = installRoot(claudeDir)
-  assert.deepEqual(readJson(join(root, 'config.json')), { quotes: true })
-  assert.equal(quotesSetting(join(root, 'config.json')), true)
-  assert.equal(inspect(claudeDir).quotesOn, true)
-})
-
-test('quotes off: config says so, no key is kept, and the key is not needed', () => {
-  const { claudeDir, sourceDir } = sandbox()
-  const root = installRoot(claudeDir)
-  runSteps(installSteps({ claudeDir, sourceDir, quotes: true, apiKey: 'abcDEF123456' }))
-  assert.equal(existsSync(join(root, '.env')), true)
-
-  runSteps(installSteps({ claudeDir, sourceDir, quotes: false, apiKey: 'abcDEF123456' })) // a key is ignored when quotes are off
-  assert.deepEqual(readJson(join(root, 'config.json')), { quotes: false })
-  assert.equal(existsSync(join(root, '.env')), false)
-  assert.equal(inspect(claudeDir).quotesOn, false)
-  assert.equal(inspect(claudeDir).hasKey, false)
-})
-
-test('quotes on without any key aborts before anything is written', () => {
-  const { claudeDir, sourceDir } = sandbox()
-  assert.throws(() => runSteps(installSteps({ claudeDir, sourceDir, quotes: true })), /Quotes need an API key/)
-  assert.equal(existsSync(installRoot(claudeDir)), false)
-})
-
-test('quotesSetting: only an explicit false turns quotes off', () => {
-  const dir = mkdtempSync(join(tmpdir(), 'quotes-setting-'))
-  const file = join(dir, 'config.json')
-  assert.equal(quotesSetting(file), true) // missing file
-  writeFileSync(file, '{ nope')
-  assert.equal(quotesSetting(file), true) // unreadable
-  writeFileSync(file, '{}')
-  assert.equal(quotesSetting(file), true)
-  writeFileSync(file, '{"quotes":false}')
-  assert.equal(quotesSetting(file), false)
-})
-
 test('uninstall removes our files and status line but not a foreign one', () => {
   const { claudeDir, sourceDir } = sandbox()
-  runSteps(installSteps({ claudeDir, sourceDir, quotes: false }))
+  runSteps(installSteps({ claudeDir, sourceDir }))
   runSteps(uninstallSteps(claudeDir))
   assert.equal(existsSync(installRoot(claudeDir)), false)
   assert.equal('statusLine' in readJson(settingsPath(claudeDir)), false)
@@ -159,4 +102,15 @@ test('uninstall removes our files and status line but not a foreign one', () => 
   writeFileSync(settingsPath(claudeDir), JSON.stringify(foreign))
   runSteps(uninstallSteps(claudeDir))
   assert.deepEqual(readJson(settingsPath(claudeDir)), foreign)
+})
+
+test('re-install drops what 0.1.x left behind: the quotes key and setting', () => {
+  const { claudeDir, sourceDir } = sandbox()
+  const root = installRoot(claudeDir)
+  mkdirSync(root, { recursive: true })
+  writeFileSync(join(root, '.env'), 'API_NINJAS_KEY=abcDEF123456')
+  writeFileSync(join(root, 'config.json'), '{"quotes":true}')
+  runSteps(installSteps({ claudeDir, sourceDir }))
+  assert.equal(existsSync(join(root, '.env')), false)
+  assert.equal(existsSync(join(root, 'config.json')), false)
 })

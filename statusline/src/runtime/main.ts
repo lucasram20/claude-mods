@@ -3,7 +3,7 @@
 import { gitSummary } from './git.ts'
 import { readInput } from './input.ts'
 import { buildLine } from './line.ts'
-import { currentQuote } from './quote.ts'
+import { currentTrack } from './music.ts'
 
 const input = readInput()
 const now = Date.now()
@@ -13,7 +13,8 @@ console.log(
     model: input.model?.display_name ?? '?',
     percent: Math.round(input.context_window?.used_percentage ?? 0),
     git: gitSummary(input.workspace?.current_dir ?? input.cwd ?? process.cwd(), now),
-    quote: currentQuote(now),
+    music: currentTrack(now),
+    columns: Number(process.env.COLUMNS) || 100,
     time: new Date(now).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true }),
   }),
 )
