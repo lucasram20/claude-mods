@@ -2,6 +2,7 @@ import { spawn } from 'node:child_process'
 import { readFileSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { extname, join } from 'node:path'
+import { quotesEnabled } from './config.ts'
 import { loadEnv } from './env.ts'
 import { TOPICS, type Topic } from './topics.ts'
 
@@ -28,6 +29,7 @@ const apiUrl = () => process.env.QUOTES_API_URL ?? 'https://api.api-ninjas.com/v
 const cacheFile = () => join(process.env.STATUSLINE_CACHE_DIR ?? tmpdir(), 'claude-statusline-quote.json')
 
 export function apiKey(): string | undefined {
+  if (!quotesEnabled()) return undefined // the user chose "no quotes" in the installer
   loadEnv(join(import.meta.dirname, '..', '.env')) // installed: <root>/runtime/ next to <root>/.env
   loadEnv(join(import.meta.dirname, '..', '..', '.env')) // repo checkout: statusline/src/runtime/
   return process.env.API_NINJAS_KEY || undefined
@@ -93,6 +95,7 @@ export async function refreshQuote(): Promise<void> {
  * cache in the background so the status line itself never waits on the network.
  */
 export function currentQuote(now: number): Quote | undefined {
+  if (!quotesEnabled()) return undefined
   const cache = readCache()
   const quote = cache.quote && fits(cache.quote) ? cache.quote : undefined // drop quotes cached under an older, longer limit
   const isStale = !quote || now - cache.fetchedAt > TTL_MS

@@ -8,17 +8,13 @@ const ORANGE = '#d97757' // Claude brand color
 const FRAMES = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏']
 const PLATFORMS: Record<string, string> = { win32: 'Windows', darwin: 'macOS', linux: 'Linux' }
 
-const PREVIEW = buildLine({
-  model: 'Opus',
-  percent: 38,
-  git: 'main +1 ~2',
-  quote: { text: 'Less is more.', author: 'Mies' },
-  time: '5:42 PM',
-})
+const SAMPLE = { model: 'Opus', percent: 38, git: 'main +1 ~2', time: '5:42 PM' }
+const PREVIEW = buildLine({ ...SAMPLE, quote: { text: 'Less is more.', author: 'Mies' } })
+const PREVIEW_PLAIN = buildLine(SAMPLE)
 
 const sleep = (ms: number) => new Promise<void>(resolve => setTimeout(resolve, ms))
 
-type Phase = 'confirm' | 'key' | 'run' | 'done' | 'error' | 'cancelled'
+type Phase = 'confirm' | 'quotes' | 'key' | 'run' | 'done' | 'error' | 'cancelled'
 
 export interface AppProps {
   mode: 'install' | 'uninstall'
@@ -28,6 +24,8 @@ export interface AppProps {
   sourceDir: string
   /** API key from the API_NINJAS_KEY environment variable (non-interactive installs). */
   envKey?: string | undefined
+  /** Forces quotes on or off without prompting; leave out to decide from the key and earlier choice. */
+  quotes?: boolean | undefined
 }
 
 function Spinner() {
@@ -52,7 +50,7 @@ function Row({ label, children }: { label: string; children: ReactNode }) {
 
 const short = (text: string, max = 64) => (text.length > max ? `${text.slice(0, max - 1)}…` : text)
 
-export function App({ mode, ask, claudeDir, sourceDir, envKey }: AppProps) {
+export function App({ mode, ask, claudeDir, sourceDir, envKey, quotes }: AppProps) {
   const { exit } = useApp()
   const installing = mode === 'install'
   const [info] = useState(() => inspect(claudeDir))
@@ -63,25 +61,50 @@ export function App({ mode, ask, claudeDir, sourceDir, envKey }: AppProps) {
   const [apiKey, setApiKey] = useState<string | undefined>(envKey?.trim() || undefined)
   const [finished, setFinished] = useState<{ label: string; detail?: string | void }[]>([])
   const [current, setCurrent] = useState<string>()
+  // Asked in the 'quotes' phase. With no prompts: an explicit flag, else on when a key was provided or is already saved.
+  const [wantQuotes, setWantQuotes] = useState(
+    ask ? info.quotesOn : (quotes ?? (Boolean(envKey?.trim()) || (info.hasKey && info.quotesOn))),
+  )
 
   useInput(
     (input, key) => {
       if (phase === 'confirm') {
         const answer = input.toLowerCase()
-        if (key.return || answer === 'y') setPhase(installing ? 'key' : 'run')
+        if (key.return || answer === 'y') setPhase(installing ? 'quotes' : 'run')
         else if (answer === 'n' || key.escape) setPhase('cancelled')
+      } else if (phase === 'quotes') {
+        const answer = input.toLowerCase()
+        if (answer === 'y') {
+          setWantQuotes(true)
+          setPhase('key')
+        } else if (answer === 'n') {
+          setWantQuotes(false)
+          setPhase('run')
+        } else if (key.upArrow || key.downArrow || key.leftArrow || key.rightArrow || key.tab) {
+          setWantQuotes(w => !w)
+        } else if (key.return) {
+          setPhase(wantQuotes ? 'key' : 'run')
+        } else if (key.escape) {
+          setPhase('cancelled')
+        }
       } else if (phase === 'key') {
         if (key.return) {
           const value = typed.trim()
+          if (!value && !info.hasKey) {
+            setKeyError('Quotes need an API key. Paste it, or press Esc to go back and choose no quotes.')
+            return
+          }
           if (value && !API_KEY_PATTERN.test(value)) {
-            setKeyError('That does not look like an API key. Paste it again, or press Esc to skip.')
+            setKeyError('That does not look like an API key. Paste it again, or press Esc to go back.')
             setTyped('')
             return
           }
           setApiKey(value || undefined)
           setPhase('run')
         } else if (key.escape) {
-          setPhase('run')
+          setTyped('')
+          setKeyError(undefined)
+          setPhase('quotes')
         } else if (key.backspace || key.delete) {
           setTyped(t => t.slice(0, -1))
         } else if (input && !key.ctrl && !key.meta) {
@@ -90,14 +113,14 @@ export function App({ mode, ask, claudeDir, sourceDir, envKey }: AppProps) {
         }
       }
     },
-    { isActive: ask && (phase === 'confirm' || phase === 'key') },
+    { isActive: ask && (phase === 'confirm' || phase === 'quotes' || phase === 'key') },
   )
 
   useEffect(() => {
     if (phase !== 'run') return
     let alive = true
     void (async () => {
-      const steps = installing ? installSteps({ claudeDir, sourceDir, apiKey }) : uninstallSteps(claudeDir)
+      const steps = installing ? installSteps({ claudeDir, sourceDir, quotes: wantQuotes, apiKey }) : uninstallSteps(claudeDir)
       try {
         for (const step of steps) {
           if (!alive) return
@@ -153,7 +176,7 @@ export function App({ mode, ask, claudeDir, sourceDir, envKey }: AppProps) {
       {installing && (
         <Box flexDirection="column" marginTop={1}>
           <Text dimColor>Preview</Text>
-          <Text>{PREVIEW}</Text>
+          <Text>{wantQuotes ? PREVIEW : PREVIEW_PLAIN}</Text>
         </Box>
       )}
 
@@ -165,12 +188,28 @@ export function App({ mode, ask, claudeDir, sourceDir, envKey }: AppProps) {
         </Box>
       )}
 
+      {phase === 'quotes' && (
+        <Box flexDirection="column" marginTop={1}>
+          <Box>
+            <Text color={ORANGE}>? </Text>
+            <Text>Add a random quote to the status line? </Text>
+            <Text dimColor>(↑/↓ to choose, Enter to confirm)</Text>
+          </Box>
+          <Text color={wantQuotes ? ORANGE : undefined} dimColor={!wantQuotes}>
+            {wantQuotes ? '› ' : '  '}Yes, show quotes <Text dimColor>(needs a free API Ninjas key)</Text>
+          </Text>
+          <Text color={!wantQuotes ? ORANGE : undefined} dimColor={wantQuotes}>
+            {!wantQuotes ? '› ' : '  '}No, keep it simple
+          </Text>
+        </Box>
+      )}
+
       {phase === 'key' && (
         <Box flexDirection="column" marginTop={1}>
           <Box>
             <Text color={ORANGE}>? </Text>
             <Text>API Ninjas key for the quotes </Text>
-            <Text dimColor>{info.hasKey ? '(Enter keeps your saved key, Esc skips)' : '(optional, Enter or Esc skips)'}</Text>
+            <Text dimColor>{info.hasKey ? '(Enter keeps your saved key, Esc goes back)' : '(Esc goes back)'}</Text>
           </Box>
           <Box>
             <Text color={ORANGE}>› </Text>
@@ -205,9 +244,7 @@ export function App({ mode, ask, claudeDir, sourceDir, envKey }: AppProps) {
           <Text bold color="green">
             {installing ? 'All set! Start (or restart) Claude Code to see your new status line.' : 'Removed. Restart Claude Code to go back to the default status line.'}
           </Text>
-          {installing && !apiKey && !info.hasKey && (
-            <Text dimColor>No quotes yet: add a free key from api-ninjas.com/register by running this installer again.</Text>
-          )}
+          {installing && !wantQuotes && <Text dimColor>Quotes are off. Run the installer again to turn them on.</Text>}
           {installing && <Text dimColor>To remove it later: npx claude-mods-statusline --uninstall</Text>}
         </Box>
       )}

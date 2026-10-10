@@ -12,6 +12,7 @@ import {
 } from 'node:fs'
 import { homedir } from 'node:os'
 import { join } from 'node:path'
+import { CONFIG_FILE, quotesSetting } from '../runtime/config.ts'
 import {
   isOurs,
   MARKER,
@@ -40,6 +41,8 @@ export interface Inspection {
   ours: boolean
   hasGit: boolean
   hasKey: boolean
+  /** The saved quotes choice (on unless the installer turned it off earlier). */
+  quotesOn: boolean
   settingsError: string | undefined
 }
 
@@ -65,7 +68,9 @@ export function inspect(dir: string): Inspection {
     hasKey = /^API_NINJAS_KEY=\S+/m.test(readFileSync(join(installRoot(dir), '.env'), 'utf8'))
   } catch {} // not installed yet
 
-  return { settingsPath: file, current: statusLineOf(settings), ours: isOurs(settings), hasGit, hasKey, settingsError }
+  const quotesOn = quotesSetting(join(installRoot(dir), CONFIG_FILE))
+
+  return { settingsPath: file, current: statusLineOf(settings), ours: isOurs(settings), hasGit, hasKey, quotesOn, settingsError }
 }
 
 /** One unit of work. `run` may return a short detail to show next to the label, or throw. */
@@ -78,7 +83,9 @@ export interface InstallOptions {
   claudeDir: string
   /** Folder holding the built runtime `.js` files (dist/runtime). */
   sourceDir: string
-  /** New API Ninjas key; leave out to keep whatever is already installed. */
+  /** Show a random quote. Off removes any saved API key and the status line never calls the API. */
+  quotes: boolean
+  /** New API Ninjas key for the quotes; leave out to keep the one already saved. */
   apiKey?: string | undefined
 }
 
@@ -108,8 +115,11 @@ export function installSteps(opts: InstallOptions): Step[] {
       label: 'Checking your settings',
       run() {
         settings = parseSettings(existsSync(file) ? readFileSync(file, 'utf8') : undefined)
-        if (opts.apiKey !== undefined && !API_KEY_PATTERN.test(opts.apiKey)) {
+        if (opts.quotes && opts.apiKey !== undefined && !API_KEY_PATTERN.test(opts.apiKey)) {
           throw new Error('That API key has unexpected characters. Copy it again from api-ninjas.com/account.')
+        }
+        if (opts.quotes && !opts.apiKey && !existsSync(join(root, '.env'))) {
+          throw new Error('Quotes need an API key. Set API_NINJAS_KEY, or run without --yes to paste it, or use --no-quotes.')
         }
         if (!readdirSync(opts.sourceDir).some(f => f.endsWith('.js'))) {
           throw new Error(`No built files in ${opts.sourceDir}. Run "npm run build" first.`)
@@ -132,17 +142,22 @@ export function installSteps(opts: InstallOptions): Step[] {
     },
   ]
 
-  if (opts.apiKey) {
-    steps.push({
-      label: 'Saving your API key',
-      run() {
-        const env = join(root, '.env')
-        writeFileSync(env, `API_NINJAS_KEY=${opts.apiKey}\n`, { mode: 0o600 })
-        chmodSync(env, 0o600) // writeFileSync's mode is ignored when the file already exists
-        return env
-      },
-    })
-  }
+  steps.push({
+    label: opts.quotes ? 'Turning quotes on' : 'Leaving quotes off',
+    run() {
+      const env = join(root, '.env')
+      writeFileSync(join(root, CONFIG_FILE), `${JSON.stringify({ quotes: opts.quotes }, null, 2)}\n`)
+      if (!opts.quotes) {
+        const had = existsSync(env)
+        rmSync(env, { force: true }) // nobody asked for quotes, so don't keep a key around
+        return had ? 'removed the saved API key' : undefined
+      }
+      if (!opts.apiKey) return 'kept the saved API key'
+      writeFileSync(env, `API_NINJAS_KEY=${opts.apiKey}\n`, { mode: 0o600 })
+      chmodSync(env, 0o600) // writeFileSync's mode is ignored when the file already exists
+      return 'saved your API key'
+    },
+  })
 
   steps.push({
     label: 'Updating settings.json',

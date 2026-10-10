@@ -8,7 +8,10 @@ const HELP = `claude-mods-statusline: install the claude-mods status line into C
 Usage: npx claude-mods-statusline [options]
 
 Options:
-  -y, --yes        Skip the prompts and install with defaults
+  -y, --yes        Skip the prompts and install with defaults (quotes on only if
+                   API_NINJAS_KEY is set)
+      --quotes     With --yes: turn quotes on (needs a key)
+      --no-quotes  With --yes: leave quotes off
       --uninstall  Remove the status line and the files this installer added
   -h, --help       Show this help
   -v, --version    Show the version
@@ -18,11 +21,13 @@ Environment:
   CLAUDE_CONFIG_DIR   Claude Code config folder (default: ~/.claude)
 `
 
-let args: { yes?: boolean; uninstall?: boolean; help?: boolean; version?: boolean }
+let args: { yes?: boolean; quotes?: boolean; 'no-quotes'?: boolean; uninstall?: boolean; help?: boolean; version?: boolean }
 try {
   args = parseArgs({
     options: {
       yes: { type: 'boolean', short: 'y' },
+      quotes: { type: 'boolean' },
+      'no-quotes': { type: 'boolean' },
       uninstall: { type: 'boolean' },
       help: { type: 'boolean', short: 'h' },
       version: { type: 'boolean', short: 'v' },
@@ -61,6 +66,7 @@ const { waitUntilExit } = render(
     claudeDir={claudeDir()}
     sourceDir={join(import.meta.dirname, '..', 'runtime')}
     envKey={process.env.API_NINJAS_KEY}
+    quotes={args['no-quotes'] ? false : args.quotes ? true : undefined}
   />,
 )
 await waitUntilExit()
