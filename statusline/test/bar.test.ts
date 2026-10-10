@@ -1,35 +1,35 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import { renderBar } from '../src/bar.ts'
-import { heat, PALETTE } from '../src/theme.ts'
+import { levelColor } from '../src/theme.ts'
 
-const EMPTY = PALETTE.barEmpty.join(';')
-const cells = (bar: string) => [...bar.matchAll(/48;2;(\d+;\d+;\d+)m /g)].map(m => m[1])
+const plain = (s: string) => s.replace(/\x1b\[[0-9;]*m/g, '')
 
 test('bar has a fixed width and a proportional fill', () => {
-  const c = cells(renderBar(50, 0, 20))
-  assert.equal(c.length, 20)
-  assert.equal(c.filter(x => x === EMPTY).length, 10)
+  assert.equal(plain(renderBar(50)).length, 20)
+  const [filled = ''] = renderBar(50).split('\x1b[48;2;58;58;68m') // everything before the empty part
+  assert.equal(plain(filled).length, 10)
 })
 
 test('percent is clamped to 0-100', () => {
-  assert.equal(cells(renderBar(250, 0)).filter(x => x === EMPTY).length, 0)
-  assert.equal(cells(renderBar(-5, 0)).filter(x => x === EMPTY).length, 20)
+  assert.equal(plain(renderBar(250)).length, 20)
+  assert.equal(plain(renderBar(-5)).length, 20)
+  assert.equal(plain(renderBar(250).split('\x1b[48;2;58;58;68m')[1] ?? '').length, 0) // nothing empty
+  assert.equal(plain(renderBar(-5).split('\x1b[48;2;58;58;68m')[0] ?? '').length, 0) // nothing filled
 })
 
-test('glint stays inside the filled part and does sweep across it', () => {
-  const seen = new Set<string | undefined>()
-  for (let t = 0; t < 30_000; t += 1000) {
-    const c = cells(renderBar(48, t))
-    assert.ok(c.slice(10).every(x => x === EMPTY), 'free space never shines')
-    c.slice(0, 10).forEach(x => seen.add(x))
-  }
-  const { base, edge, core } = heat(48)
-  for (const color of [base, edge, core]) assert.ok(seen.has(color.join(';')))
+test('level colors step green, yellow, orange, red', () => {
+  const levels = [10, 44, 45, 69, 70, 84, 85, 100].map(p => levelColor(p).join(';'))
+  assert.equal(new Set(levels).size, 4)
+  assert.equal(levels[0], levels[1])
+  assert.notEqual(levels[1], levels[2])
+  assert.equal(levels[2], levels[3])
+  assert.notEqual(levels[3], levels[4])
+  assert.equal(levels[4], levels[5])
+  assert.notEqual(levels[5], levels[6])
+  assert.equal(levels[6], levels[7])
 })
 
-test('bar color follows context usage', () => {
-  const fill = (p: number) => cells(renderBar(p, 0))[0]
-  assert.notEqual(fill(10), fill(60))
-  assert.notEqual(fill(60), fill(90))
+test('bar is tinted with the level color', () => {
+  assert.ok(renderBar(60).startsWith(`\x1b[48;2;${levelColor(60).join(';')}m`))
 })

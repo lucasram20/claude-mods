@@ -4,7 +4,7 @@ Personal mods for [Claude Code](https://code.claude.com). Each mod lives in its 
 
 | Mod | What it does |
 | --- | --- |
-| [`statusline/`](statusline) | A custom status line: Claude logo and model, a shimmering context bar, git branch and status, a 12-hour clock, and a random quote on a second line |
+| [`statusline/`](statusline) | A custom status line: Claude logo and model, a color-coded context bar, git branch and status, a 12-hour clock, and a random quote on a second line |
 
 ## statusline
 
@@ -13,7 +13,7 @@ Personal mods for [Claude Code](https://code.claude.com). Each mod lives in its 
 ```
 
 - **Model:** the Claude starburst in brand orange (`#d97757`), then the model name.
-- **Context bar:** a solid bar with a glint that sweeps across the filled part, plus the percentage. Green below 50%, amber from 50%, red from 80%. Claude Code re-runs the script every second, and the animation frame is derived from the clock.
+- **Context bar:** a solid bar plus the percentage, colored by how full the context is: green below 45%, yellow from 45%, orange from 70%, red from 85%.
 - **Git:** purple branch plus `+` staged (green), `~` modified (yellow), `?` untracked (red), `↑` ahead and `↓` behind (cyan), or `clean`. Hidden outside a repo. Cached for 5 seconds.
 - **Time:** 12-hour clock, in blue.
 - **Colors:** all in [`src/theme.ts`](statusline/src/theme.ts) as 24-bit RGB, so the palette is easy to retune.
@@ -43,12 +43,12 @@ Point Claude Code at it in `~/.claude/settings.json`, using the absolute path to
   "statusLine": {
     "type": "command",
     "command": "node C:/path/to/claude-mods/statusline/src/main.ts",
-    "refreshInterval": 1
+    "refreshInterval": 30
   }
 }
 ```
 
-`refreshInterval: 1` makes Claude Code re-run the script every second, which drives the shine and the clock. Remove it to update only on session events (the shine will stop moving).
+`refreshInterval: 30` re-runs the script every 30 seconds so the clock stays current while the session is idle. Claude Code also re-runs it after every event, so everything else is already live. Remove it to update only on events.
 
 ### Quotes (optional)
 
@@ -61,9 +61,9 @@ The API's category list only includes `philosophy` of the four topics. Science, 
 
 ### How it stays light
 
-The status line runs every second, so each run must be cheap.
+Claude Code runs the status line after every event, so each run must be cheap.
 
-- No state is kept in memory: the shine is a pure function of the clock, and each run is a short-lived process.
+- Nothing is kept in memory between runs: each run is a short-lived process.
 - Git results are cached on disk for 5 seconds, so most runs don't start `git`.
 - The quote is read from a cache file. When it is older than 10 minutes, a detached background process refreshes it, so the status line never waits on the network. A failed refresh keeps the old quote and retries after a minute.
 
@@ -94,7 +94,7 @@ claude-mods/
     ├── src/
     │   ├── main.ts            entry point, assembles the lines
     │   ├── input.ts           reads the status JSON from stdin
-    │   ├── bar.ts             context bar and shine animation
+    │   ├── bar.ts             context bar
     │   ├── git.ts             git branch and status, cached
     │   ├── quote.ts           quote fetching and cache
     │   ├── refresh-quote.ts   detached background refresh entry

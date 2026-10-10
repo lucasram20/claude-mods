@@ -27,16 +27,11 @@ export const PALETTE = {
   barEmpty: [58, 58, 68], // free part of the context bar
 } as const satisfies Record<string, Rgb>
 
-/** Bar and percentage colors for a context level: `edge` and `core` are the glint's shades. */
-export interface Heat {
-  base: Rgb
-  edge: Rgb
-  core: Rgb
-}
+const GREEN: Rgb = [63, 185, 120]
+const YELLOW: Rgb = [240, 200, 70]
+const ORANGE: Rgb = [240, 140, 50]
+const RED: Rgb = [225, 85, 85]
 
-const GREEN: Heat = { base: [63, 185, 120], edge: [110, 215, 160], core: [190, 255, 215] }
-const AMBER: Heat = { base: [224, 175, 60], edge: [244, 205, 110], core: [255, 238, 180] }
-const RED: Heat = { base: [225, 85, 85], edge: [240, 130, 130], core: [255, 200, 200] }
-
-/** Green while there's plenty of context left, amber from 50%, red from 80%. */
-export const heat = (percent: number): Heat => (percent < 50 ? GREEN : percent < 80 ? AMBER : RED)
+/** Color of the context bar and percentage: green, then yellow from 45%, orange from 70%, red from 85%. */
+export const levelColor = (percent: number): Rgb =>
+  percent < 45 ? GREEN : percent < 70 ? YELLOW : percent < 85 ? ORANGE : RED
