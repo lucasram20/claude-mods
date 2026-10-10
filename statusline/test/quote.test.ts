@@ -5,7 +5,7 @@ import type { AddressInfo } from 'node:net'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { test, type TestContext } from 'node:test'
-import { currentQuote, fetchQuote, refreshQuote } from '../src/quote.ts'
+import { currentQuote, fetchQuote, refreshQuote } from '../src/runtime/quote.ts'
 
 process.env.STATUSLINE_CACHE_DIR = mkdtempSync(join(tmpdir(), 'statusline-test-'))
 

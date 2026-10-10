@@ -1,20 +1,54 @@
 {
   "name": "claude-mods-statusline",
   "version": "0.1.0",
-  "private": true,
-  "description": "A custom Claude Code status line written in TypeScript",
+  "description": "A themed status line for Claude Code, with an interactive installer for Windows, macOS and Linux",
+  "keywords": [
+    "claude",
+    "claude-code",
+    "statusline",
+    "cli",
+    "ink"
+  ],
+  "license": "MIT",
   "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/lucasram20/claude-mods.git",
+    "directory": "statusline"
+  },
+  "homepage": "https://github.com/lucasram20/claude-mods#readme",
+  "bugs": {
+    "url": "https://github.com/lucasram20/claude-mods/issues"
+  },
+  "bin": {
+    "claude-mods-statusline": "dist/installer/cli.js"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
   "engines": {
-    "node": ">=24"
+    "node": ">=22"
+  },
+  "publishConfig": {
+    "access": "public"
   },
   "scripts": {
-    "start": "node src/main.ts",
+    "start": "node src/runtime/main.ts",
+    "build": "node -e \"fs.rmSync('dist',{recursive:true,force:true})\" && tsc -p tsconfig.build.json",
     "typecheck": "tsc",
     "test": "node --test \"test/**/*.test.ts\"",
-    "check": "npm run typecheck && npm test"
+    "check": "npm run typecheck && npm test",
+    "prepublishOnly": "npm run check && npm run build"
+  },
+  "dependencies": {
+    "ink": "^8.0.0",
+    "react": "^19.3.0"
   },
   "devDependencies": {
-    "@types/node": "^26.6.5",
+    "@types/node": "^22.20.5",
+    "@types/react": "^19.3.0",
     "typescript": "^7.0.2"
   }
 }

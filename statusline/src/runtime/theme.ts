@@ -1,14 +1,25 @@
-// Colors for the status line, as 24-bit RGB (Claude Code renders ANSI truecolor).
+// Colors for the status line. 24-bit RGB almost everywhere; macOS Terminal.app only does
+// 256 colors, so it gets the nearest palette entry instead of garbled output.
 export type Rgb = readonly [number, number, number]
 
 const RESET = '\x1b[0m'
 
+/** Nearest xterm-256 color-cube entry. */
+const to256 = ([r, g, b]: Rgb): number => {
+  const q = (v: number) => Math.round((v / 255) * 5)
+  return 16 + 36 * q(r) + 6 * q(g) + q(b)
+}
+
+/** SGR parameters selecting `color` as foreground (38) or background (48). */
+const select = (layer: 38 | 48, color: Rgb): string =>
+  process.env.TERM_PROGRAM === 'Apple_Terminal' ? `${layer};5;${to256(color)}` : `${layer};2;${color.join(';')}`
+
 /** Foreground-colored text; the color is reset afterwards. */
 export const fg = (color: Rgb, text: string, italic = false): string =>
-  `\x1b[${italic ? '3;' : ''}38;2;${color.join(';')}m${text}${RESET}`
+  `\x1b[${italic ? '3;' : ''}${select(38, color)}m${text}${RESET}`
 
 /** Escape that switches the background color (the caller resets it). */
-export const bg = (color: Rgb): string => `\x1b[48;2;${color.join(';')}m`
+export const bg = (color: Rgb): string => `\x1b[${select(48, color)}m`
 
 export const RESET_ALL = RESET
 

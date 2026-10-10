@@ -1,13 +1,13 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import { paintGit, summarize } from '../src/git.ts'
+import { paintGit, summarize } from '../src/runtime/git.ts'
 
 const plain = (s: string) => s.replace(/\x1b\[[0-9;]*m/g, '')
 
 test('paintGit keeps the text and colors each part', () => {
   const painted = paintGit('feature/x y +1 ~2 ?3 ↑1')
   assert.equal(plain(painted), 'feature/x y +1 ~2 ?3 ↑1')
-  assert.equal(painted.match(/\x1b\[38;2;[\d;]+m/g)?.length, 5) // branch + four flags
+  assert.equal(painted.match(/\x1b\[38;[25];[\d;]+m/g)?.length, 5) // branch + four flags
   assert.equal(plain(paintGit('main clean')), 'main clean')
 })
 

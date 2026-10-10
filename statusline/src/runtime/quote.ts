@@ -1,7 +1,7 @@
 import { spawn } from 'node:child_process'
 import { readFileSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
-import { join } from 'node:path'
+import { extname, join } from 'node:path'
 import { loadEnv } from './env.ts'
 import { TOPICS, type Topic } from './topics.ts'
 
@@ -28,7 +28,8 @@ const apiUrl = () => process.env.QUOTES_API_URL ?? 'https://api.api-ninjas.com/v
 const cacheFile = () => join(process.env.STATUSLINE_CACHE_DIR ?? tmpdir(), 'claude-statusline-quote.json')
 
 export function apiKey(): string | undefined {
-  loadEnv(join(import.meta.dirname, '..', '.env'))
+  loadEnv(join(import.meta.dirname, '..', '.env')) // installed: <root>/runtime/ next to <root>/.env
+  loadEnv(join(import.meta.dirname, '..', '..', '.env')) // repo checkout: statusline/src/runtime/
   return process.env.API_NINJAS_KEY || undefined
 }
 
@@ -97,7 +98,8 @@ export function currentQuote(now: number): Quote | undefined {
   const isStale = !quote || now - cache.fetchedAt > TTL_MS
   if (isStale && now - cache.attemptedAt > RETRY_MS && apiKey()) {
     writeCache({ ...cache, attemptedAt: now })
-    spawn(process.execPath, [join(import.meta.dirname, 'refresh-quote.ts')], {
+    // Same extension as this file: .ts when run from source, .js once built.
+    spawn(process.execPath, [join(import.meta.dirname, `refresh-quote${extname(import.meta.filename)}`)], {
       detached: true,
       stdio: 'ignore',
       windowsHide: true,
