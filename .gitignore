@@ -32,3 +32,6 @@ npm-debug.log*
 .DS_Store
 Thumbs.db
 Desktop.ini
+
+# Serena MCP local project state (config, cache, memories)
+.serena/
